@@ -100,7 +100,7 @@ app.post('/upload', upload.single('dist'), (req, res, next) => {
 
     shell.exec(`pm2 stop ${req.body.pm2_process}`);
 
-    shell.mv(req.body.destination, `${req.body.destination}.bak`);
+    shell.mv(`${req.body.destination}/${req.body.source_dir}`, `${req.body.destination}/${req.body.source_dir}.bak`);
     shell.mv(`${dir}`, req.body.destination);
 
     shell.exec(`pm2 start ${req.body.pm2_process}`);
