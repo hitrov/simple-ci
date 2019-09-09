@@ -78,6 +78,13 @@ app.post('/upload', upload.single('dist'), (req, res, next) => {
 
     const filename = `${uploadsDir}/${req.body.source}`;
 
+    if (!fs.existsSync(filename)) {
+        res.status(500);
+        res.send(`${filename} - archive does not exist.`);
+
+        return;
+    }
+
     shell.exec(`tar -zxvf ${filename}`);
 
     const dir = `${uploadsDir}/${req.body.source_dir}`;
