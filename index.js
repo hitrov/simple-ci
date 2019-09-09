@@ -87,7 +87,7 @@ app.post('/upload', upload.single('dist'), (req, res, next) => {
 
     shell.exec(`tar -zxvf ${filename}`);
 
-    const dir = `${uploadsDir}/${req.body.source_dir}`;
+    const dir = `${req.body.source_dir}`;
 
     if (!fs.existsSync(dir)) {
         res.status(400);
