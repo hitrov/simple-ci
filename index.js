@@ -63,6 +63,13 @@ app.post('/upload', upload.single('dist'), (req, res, next) => {
         return;
     }
 
+    if (!req.body.pm2_process) {
+        res.status(400);
+        res.send(`body.pm2_process is missing.`);
+
+        return;
+    }
+
     if (!fs.existsSync(req.body.destination)) {
         res.status(400);
         res.send(`body.destination does not exist.`);
@@ -72,7 +79,14 @@ app.post('/upload', upload.single('dist'), (req, res, next) => {
 
     shell.exec(`tar -zxvf ${filename}`);
     shell.rm(`${filename}`);
+
+    shell.exec(`pm2 stop ${req.body.pm2_process}`);
+
+    shell.mv(req.body.destination, `${req.body.destination}.bak`);
     shell.mv(req.body.source, req.body.destination);
+
+    shell.exec(`pm2 start ${req.body.pm2_process}`);
+
     res.send(shell.ls(uploadsDir));
 });
 
