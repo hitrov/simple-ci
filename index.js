@@ -4,8 +4,7 @@ const multer = require('multer');
 const shell = require('shelljs');
 const fs = require('fs')
 
-const uploadsDir = 'uploads';
-const filename = `${uploadsDir}/build.tar.gz`;
+const uploadsDir = `${__dirname}/uploads`;
 
 const app = express();
 app.use(bodyParser.urlencoded({extended: true}));
@@ -77,13 +76,25 @@ app.post('/upload', upload.single('dist'), (req, res, next) => {
         return;
     }
 
+    const filename = `${uploadsDir}/${req.body.source}`;
+
     shell.exec(`tar -zxvf ${filename}`);
+
+    const dir = `${uploadsDir}/${req.body.source_dir}`;
+
+    if (!fs.existsSync(dir)) {
+        res.status(400);
+        res.send(`${dir} - dir does not exist.`);
+
+        return;
+    }
+
     shell.rm(`${filename}`);
 
     shell.exec(`pm2 stop ${req.body.pm2_process}`);
 
     shell.mv(req.body.destination, `${req.body.destination}.bak`);
-    shell.mv(req.body.source, req.body.destination);
+    shell.mv(`${dir}`, req.body.destination);
 
     shell.exec(`pm2 start ${req.body.pm2_process}`);
 
