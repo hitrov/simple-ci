@@ -48,35 +48,40 @@ app.post('/upload', upload.single('dist'), (req, res, next) => {
 
     next();
 }, (req, res) => {
-    if (!req.body.source) {
-        res.status(400);
-        res.send(`body.source is missing.`);
+    const { projectsRoot, pm2_process } = req.body;
 
-        return;
-    }
-
-    if (!req.body.destination) {
+    if (!projectsRoot) {
         res.status(400);
         res.send(`body.destination is missing.`);
 
         return;
     }
 
-    if (!req.body.pm2_process) {
+    if (!pm2_process) {
         res.status(400);
         res.send(`body.pm2_process is missing.`);
 
         return;
     }
 
-    if (!fs.existsSync(req.body.destination)) {
+    if (!fs.existsSync(projectsRoot)) {
         res.status(400);
         res.send(`body.destination does not exist.`);
 
         return;
     }
 
-    const filename = `${uploadsDir}/${req.body.source}`;
+    const projectPath = `${projectsRoot}/${pm2_process}`;
+    console.log(`projectPath: ${projectPath}`);
+    if (!fs.existsSync(projectPath)) {
+        res.status(400);
+        res.send(`${projectPath} - dir does not exist.`);
+
+        return;
+    }
+
+    const filename = `${uploadsDir}/${pm2_process}.tar.gz`;
+    console.log(`filename: ${filename}`);
 
     if (!fs.existsSync(filename)) {
         res.status(500);
@@ -85,27 +90,20 @@ app.post('/upload', upload.single('dist'), (req, res, next) => {
         return;
     }
 
+    shell.exec(`pm2 stop ${pm2_process}`);
+
+    shell.mv(`${projectPath}`, `${projectPath}.bak`);
+
     shell.exec(`tar -zxvf ${filename}`);
-
-    const dir = `${req.body.source_dir}`;
-
-    if (!fs.existsSync(dir)) {
-        res.status(400);
-        res.send(`${dir} - dir does not exist.`);
-
-        return;
-    }
 
     shell.rm(`${filename}`);
 
-    shell.exec(`pm2 stop ${req.body.pm2_process}`);
+    console.log(`moving from ${__dirname}/${pm2_process} to ${projectsRoot}`);
+    shell.mv(`${__dirname}/${pm2_process}`, projectsRoot);
 
-    shell.mv(`${req.body.destination}/${req.body.source_dir}`, `${req.body.destination}/${req.body.source_dir}.bak`);
-    shell.mv(`${dir}`, req.body.destination);
+    shell.exec(`pm2 start ${pm2_process}`);
 
-    shell.exec(`pm2 start ${req.body.pm2_process}`);
-
-    res.send(shell.ls(uploadsDir));
+    res.send(shell.ls(projectsRoot));
 });
 
 app.listen(3001);
